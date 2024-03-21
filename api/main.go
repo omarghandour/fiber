@@ -1,36 +1,40 @@
-package main
+package handler
 
 import (
-	"log"
+	"net/http"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/adaptor"
 )
+func Handler(w http.ResponseWriter, r *http.Request) {
+	// This is needed to set the proper request path in `*fiber.Ctx`
+	r.RequestURI = r.URL.String()
 
-type Todo struct{
-	ID int `json:"id"`
-	Title string `json:"title"`
-	Done bool `json:"done"`
-	Body string `json:"body"`
+	handler().ServeHTTP(w, r)
 }
-
-func main() {
-	// fmt.Println("Hello World!")
+func handler() http.HandlerFunc {
 	app := fiber.New()
-	todos := []Todo{}
+
+	app.Get("/v1", func(ctx *fiber.Ctx) error {
+		return ctx.JSON(fiber.Map{
+			"version": "v1",
+		})
+	})
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Hello friend")
 	})
-    app.Post("/", func(c *fiber.Ctx) error {
-		todo := &Todo{}
-
-		
-		if err := c.BodyParser(todo); err != nil {
-			
-			return err
-		}
-		todo.ID = len(todos) + 1
-		todos = append(todos, *todo)
-		return c.JSON(todos)
+	app.Get("/v2", func(ctx *fiber.Ctx) error {
+		return ctx.JSON(fiber.Map{
+			"version": "v2",
+		})
 	})
-	log.Fatal(app.Listen(":3000"))
+
+	// app.Get("/", func(ctx *fiber.Ctx) error {
+	// 	return ctx.JSON(fiber.Map{
+	// 		"uri":  ctx.Request().URI().String(),
+	// 		"path": ctx.Path(),
+	// 	})
+	// })
+
+	return adaptor.FiberApp(app)
 }
