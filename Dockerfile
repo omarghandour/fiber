@@ -1,38 +1,36 @@
-# Use official Go image for building the project
+# Stage 1: Build the Go binary
 FROM golang:1.20-alpine AS builder
 
-# Set environment variables for Go
+# Environment setup
 ENV GO111MODULE=on \
     CGO_ENABLED=0 \
     GOOS=linux \
     GOARCH=amd64
 
-# Set the working directory
+# Set working directory
 WORKDIR /app
 
-# Copy the Go module files
+# Copy Go module files and download dependencies
 COPY go.mod go.sum ./
-
-# Download dependencies
 RUN go mod download
 
-# Copy the source code (api folder content)
+# Copy source code
 COPY ./api /app
 
-# Build the binary
+# Build the Go binary
 RUN go build -o main .
 
-# Minimal final image
+# Stage 2: Minimal runtime image
 FROM alpine:latest
 
-# Set working directory
+# Working directory for runtime
 WORKDIR /root/
 
-# Copy the binary from the builder stage
+# Copy the built binary
 COPY --from=builder /app/main .
 
-# Expose port 3000 for Fiber
+# Expose the port your Fiber app listens to
 EXPOSE 3000
 
-# Command to run the app
+# Command to start the app
 CMD ["./main"]
